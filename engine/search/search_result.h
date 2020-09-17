@@ -38,12 +38,15 @@ public:
     void set_score(double score) { score_ = score; }
     void set_extra(double score, ScoreType type) { extra_[type] = score; }
 
-    static double PeakValue(const std::vector<model::spectrum::Peak>& peaks)
+    static double PeakValue(const std::vector<model::spectrum::Peak>& peaks, bool simple=true)
     { 
         double sum = 0;
         for(const auto& it : peaks)
         {
-            sum += it.Intensity() * it.Intensity();
+            if (simple)
+                sum += it.Intensity();
+            else
+                sum += it.Intensity() * it.Intensity();
         }
         return sum;
     }
@@ -80,6 +83,10 @@ class ResultCollector{
 public:
     ResultCollector(): best_(0.0), oxonium_(0){}
 
+    void set_score_compute(bool simple){
+        simple_ = simple;
+    }
+    
     std::vector<SearchResult> Result()
     {
         // remove if hits over 20
@@ -161,7 +168,7 @@ public:
     
     void SpectrumBase(const std::vector<model::spectrum::Peak>& spectrum_peaks)
     {
-        spectrum_ = SearchResult::PeakValue(spectrum_peaks);
+        spectrum_ = SearchResult::PeakValue(spectrum_peaks, simple_);
     }
     void InitCollect()
     {
@@ -174,13 +181,13 @@ public:
     void OxoniumCollect(const std::vector<model::spectrum::Peak>& oxonium_peaks)
     {
         if (oxonium_peaks.empty()) return;
-        oxonium_ = SearchResult::PeakValue(oxonium_peaks);
+        oxonium_ = SearchResult::PeakValue(oxonium_peaks, simple_);
     }
     void PeptideCollect(const std::vector<model::spectrum::Peak>& peptide_peaks, int pos)
     {
         if (!peptide_peaks.empty())
         {  
-            peptide_[pos] = SearchResult::PeakValue(peptide_peaks);
+            peptide_[pos] = SearchResult::PeakValue(peptide_peaks, simple_);
         }
     }
     void GlycanCollect(const std::vector<model::spectrum::Peak>& glycan_peaks, 
@@ -191,12 +198,12 @@ public:
             switch (type)
             {
                 case SearchType::Core:
-                    glycan_core_[isomer] = SearchResult::PeakValue(glycan_peaks);
+                    glycan_core_[isomer] = SearchResult::PeakValue(glycan_peaks, simple_);
                     break;
                 case SearchType::Branch:
-                    glycan_branch_[isomer] =  SearchResult::PeakValue(glycan_peaks);
+                    glycan_branch_[isomer] =  SearchResult::PeakValue(glycan_peaks, simple_);
                 case SearchType::Terminal:
-                    glycan_terminal_[isomer] = SearchResult::PeakValue(glycan_peaks);
+                    glycan_terminal_[isomer] = SearchResult::PeakValue(glycan_peaks, simple_);
                 default:
                     break;
             }
@@ -233,7 +240,8 @@ protected:
             score = std::max(score, glycan_score);  
         }
         score += peptide_score + oxonium_;
-        score = std::sqrt(score) * 1.0 / std::sqrt(spectrum_);
+        if (!simple_)
+            score = std::sqrt(score) * 1.0 / std::sqrt(spectrum_);
         return score;
     }
 
@@ -253,6 +261,7 @@ protected:
     double best_;
     double spectrum_;
     double oxonium_;
+    bool simple_;
     std::unordered_map<int, double> peptide_;
     std::unordered_map<std::string, double> glycan_core_, glycan_branch_, glycan_terminal_;
     double precursor_mass_; 

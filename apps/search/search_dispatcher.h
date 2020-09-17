@@ -73,6 +73,9 @@ public:
     void set_parameter(SearchParameter parameter) 
         { parameter_ = parameter; }
 
+    void set_score_compute(bool simple){
+        simple_ = simple;
+    }    
 
     std::vector<engine::search::SearchResult> Dispatch()
     {
@@ -117,6 +120,7 @@ protected:
         std::vector<std::string> glycans_str = builder_->Isomer().Collection();
         precursor_runner.Init(peptides_, glycans_str);
         spectrum_runner.Init();
+        spectrum_runner.set_score_compute(simple_);
 
         std::vector<engine::search::SearchResult> temp_result;
         
@@ -154,6 +158,7 @@ protected:
     engine::glycan::NGlycanBuilder* builder_;
     std::vector<std::string> peptides_;
     SearchParameter parameter_;
+    bool simple_ = false;
 
 };
 

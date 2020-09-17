@@ -57,10 +57,15 @@ public:
     void set_isotopic(int isotope)
         { isotopic_ = isotope; }
 
+    void set_score_compute(bool simple){
+        simple_ = simple;
+    }    
+
     std::vector<SearchResult> Search()
     {
         SearchInit();
         ResultCollector collector;
+        collector.set_score_compute(simple_);
 
         collector.OxoniumCollect(SearchOxonium());
         if (collector.OxoniumMiss()) 
@@ -303,6 +308,8 @@ protected:
         util::mass::GlycanMass::kHexNAc - util::mass::GlycanMass::kWater * 2,
         util::mass::GlycanMass::kHexNAc + util::mass::GlycanMass::kHex
     };
+
+    bool simple_ = false;
 }; 
 
 } // namespace engine
