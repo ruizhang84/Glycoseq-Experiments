@@ -66,14 +66,11 @@ public:
         // find significant 
         int size = (int) p_values.size();
         double max_p = 0;
-        for(const auto& it : p_v)
+        for(int i = 0; i < size; i++)
         {
-            double p = it.second;
-            
-            auto i = std::find(p_values.begin(), p_values.end(), p);
-            int d = std::distance(p_values.begin(), i);
-            double r_p = d / size * fdr_;
-            if (r_p  >= p)
+            double p = p_values[i];
+            double r_p = i * 1.0 / size * fdr_;
+            if (p < r_p)
             {
                 max_p = std::max(max_p, p);
             }

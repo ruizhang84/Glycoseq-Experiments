@@ -13,6 +13,13 @@ search:
 	$(CC) $(CPPFLAGS) -o searching \
 	apps/search/searching.cpp model/glycan/nglycan_complex.cpp $(LIB)
 
+search_simple:
+	$(CC) $(CPPFLAGS) -o searching_simple \
+	apps/search/searching_simple.cpp model/glycan/nglycan_complex.cpp $(LIB)
+
+search_fdr_prob:
+	$(CC) $(CPPFLAGS) -o searching_fdr_prob \
+	apps/search/searching_fdr_prob.cpp model/glycan/nglycan_complex.cpp $(LIB)
 
 #  test
 glycan_test:
@@ -52,4 +59,4 @@ test: ${TEST_CASES} ${TEST_CASES_2}
 
 # clean up
 clean:
-	rm -f core test/* *.o clustering searching
+	rm -f core test/* *.o clustering searching searching_fdr_prob searching_simple

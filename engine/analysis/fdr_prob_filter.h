@@ -23,7 +23,7 @@ public:
         std::vector<engine::search::SearchResult> results;
 
          // get score lists of each spectrum
-        std::map<int, std::vector<double>> decoys_list;
+        std::map<int, std::vector<double>> v;
         for(const auto& it : decoys)
         {
             int i = it.Scan();
@@ -35,6 +35,8 @@ public:
         }
 
         // compute p value
+        std::map<int, engine::search::SearchResult> s_results;
+        std::map<int, double> p_v;
         for(const auto& it : targets)
         {
             if (v.find(it.Scan()) == v.end()) // no decoys find
@@ -49,11 +51,23 @@ public:
 
                 double p = pValue(score_list, it.Score());
 
-                if (p < fdr_)
-                    results.push_back(it)
+                p_v[it.Scan()] = p;
+                s_results[it.Scan()] = it;
             }
         }
 
+        //Bonferroni
+        int size = (int) p_v.size();
+        for(const auto& it : p_v)
+        {
+            double p = it.second;
+            if (p * size < fdr_)
+            {
+                results.push_back(s_results[it.first]);
+            }
+        }
+        if (!results.empty())
+            std::sort(results.begin(), results.end(), OrderByScan);
         return results;
     }
 
@@ -90,7 +104,9 @@ protected:
         double s = stdv(v);
         return 0.5 * erfc( (q-m) * 1.0 / (s * std::sqrt(2)) );
     }
-
+    
+    static bool OrderByScan(const engine::search::SearchResult& r1, const engine::search::SearchResult& r2)
+        { return r1.Scan() < r2.Scan(); }
 };
 
 }
