@@ -22,9 +22,13 @@ search_fdr_prob:
 	apps/search/searching_fdr_prob.cpp model/glycan/nglycan_complex.cpp $(LIB)
 
 #  test
+multi_comparison_test:
+	$(CC) $(CPPFLAGS) -o test/multi_comparison_test \
+	engine/analysis/multi_comparison_test.cpp $(INCLUDES)
+
 glycan_test:
 	$(CC) $(CPPFLAGS) -o test/glycan_test \
-	 model/glycan/glycan_test.cpp model/glycan/nglycan_complex.cpp $(INCLUDES)
+	model/glycan/glycan_test.cpp model/glycan/nglycan_complex.cpp $(INCLUDES)
 
 sim_test:
 	$(CC) $(CPPFLAGS) -o test/sim_test \

@@ -8,6 +8,8 @@
 #include <cmath> 
 #include "../../model/spectrum/spectrum.h"
 #include "../../util/mass/glycan.h"
+#include "../../util/mass/peptide.h"
+#include "../../util/mass/spectrum.h"
 #include <iostream>
 
 namespace engine{

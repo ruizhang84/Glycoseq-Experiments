@@ -113,7 +113,7 @@ protected:
         {
             m += (it - avg) * (it - avg);
         }
-        return std::sqrt( m * 1.0 / size);
+        return std::sqrt( m * 1.0 / (size - 1));
     }
 
     static double pValue(std::vector<double> v, double q)
