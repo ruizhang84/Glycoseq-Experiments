@@ -116,7 +116,7 @@ protected:
         engine::search::PrecursorMatcher precursor_runner
             (parameter_.ms1_tol, parameter_.ms1_by, builder_->Isomer());
         engine::search::SpectrumSearcher spectrum_runner
-            (parameter_.ms2_tol, parameter_.ms2_by, parameter_.isotopic_count, builder_, decoy_search);
+            (parameter_.ms2_tol, parameter_.ms2_by, parameter_.isotopic_count, builder_, decoy_search, parameter_.weight);
         std::vector<std::string> glycans_str = builder_->Isomer().Collection();
         precursor_runner.Init(peptides_, glycans_str);
         spectrum_runner.Init();

@@ -18,6 +18,28 @@ namespace search{
 enum class SearchType { Core, Branch, Terminal, Oxonium, Peptide, Base };
 enum class ScoreType { Precursor, Elution };
 
+class SearchWeight
+{
+public:
+    SearchWeight() = default;
+    const double Weight(SearchType type) const
+    {
+        auto it = weight_map_.find(type);
+        if ( it != weight_map_.end()){
+            return it->second;
+        }
+        return 0;
+    }
+
+    void set_weight(SearchType type, double weight)
+    {
+        weight_map_[type] = weight;
+    }
+
+protected:
+    std::unordered_map<SearchType, double> weight_map_;
+};
+
 class SearchResult
 {
 public:
@@ -83,7 +105,7 @@ protected:
 
 class ResultCollector{
 public:
-    ResultCollector(): best_(0.0), oxonium_(0){}
+    ResultCollector(SearchWeight weight): weight_(weight), best_(0.0), oxonium_(0){}
 
     void set_score_compute(bool simple){
         simple_ = simple;
@@ -183,13 +205,13 @@ public:
     void OxoniumCollect(const std::vector<model::spectrum::Peak>& oxonium_peaks)
     {
         if (oxonium_peaks.empty()) return;
-        oxonium_ = SearchResult::PeakValue(oxonium_peaks, simple_);
+        oxonium_ = weight_.Weight(SearchType::Oxonium) * SearchResult::PeakValue(oxonium_peaks, simple_);
     }
     void PeptideCollect(const std::vector<model::spectrum::Peak>& peptide_peaks, int pos)
     {
         if (!peptide_peaks.empty())
         {  
-            peptide_[pos] = SearchResult::PeakValue(peptide_peaks, simple_);
+            peptide_[pos] = weight_.Weight(SearchType::Core) * SearchResult::PeakValue(peptide_peaks, simple_);
         }
     }
     void GlycanCollect(const std::vector<model::spectrum::Peak>& glycan_peaks, 
@@ -200,12 +222,12 @@ public:
             switch (type)
             {
                 case SearchType::Core:
-                    glycan_core_[isomer] = SearchResult::PeakValue(glycan_peaks, simple_);
+                    glycan_core_[isomer] = weight_.Weight(SearchType::Core) * SearchResult::PeakValue(glycan_peaks, simple_);
                     break;
                 case SearchType::Branch:
-                    glycan_branch_[isomer] =  SearchResult::PeakValue(glycan_peaks, simple_);
+                    glycan_branch_[isomer] =  weight_.Weight(SearchType::Branch) * SearchResult::PeakValue(glycan_peaks, simple_);
                 case SearchType::Terminal:
-                    glycan_terminal_[isomer] = SearchResult::PeakValue(glycan_peaks, simple_);
+                    glycan_terminal_[isomer] = weight_.Weight(SearchType::Terminal) * SearchResult::PeakValue(glycan_peaks, simple_);
                 default:
                     break;
             }
@@ -259,6 +281,7 @@ protected:
         results_.push_back(res);
     }
 
+    SearchWeight weight_;
     const int max_hits = 20;
     double best_;
     double spectrum_;

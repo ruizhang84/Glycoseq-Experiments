@@ -87,6 +87,12 @@ struct arguments
     int ms2_by = 1;
     // fdr
     double fdr_rate = 0.01;
+    // weights
+    double core_w = 1.0;
+    double branch_w = 1.0;
+    double terminal_w = 1.0;
+    double peptide_w = 1.0;
+    double oxonium_w = 1.0;
 };
 
 
@@ -167,6 +173,26 @@ parse_opt (int key, char *arg, struct argp_state *state)
         arguments->fuc_upper_bound = atoi(arg);
         break;
 
+    case 'C':
+        arguments->core_w = atof(arg);
+        break;
+
+    case 'B':
+        arguments->branch_w = atof(arg);
+        break;
+
+    case 'T':
+        arguments->terminal_w = atof(arg);
+        break;
+        
+    case 'P':
+        arguments->peptide_w = atof(arg);
+        break;
+
+    case 'O':
+        arguments->oxonium_w = atof(arg);
+        break;
+
     default:
         return ARGP_ERR_UNKNOWN;
     }
@@ -218,6 +244,11 @@ SearchParameter GetParameter(const struct arguments& arguments)
             break;
         }
     }
+    parameter.weight.set_weight(engine::search::SearchType::Core, arguments.core_w);
+    parameter.weight.set_weight(engine::search::SearchType::Branch, arguments.branch_w);
+    parameter.weight.set_weight(engine::search::SearchType::Terminal, arguments.terminal_w);
+    parameter.weight.set_weight(engine::search::SearchType::Peptide, arguments.peptide_w);
+    parameter.weight.set_weight(engine::search::SearchType::Oxonium, arguments.oxonium_w);
     return parameter;
 }
 
