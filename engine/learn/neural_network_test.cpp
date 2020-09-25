@@ -11,39 +11,41 @@ namespace learn{
 
 BOOST_AUTO_TEST_CASE( neural_network_test ) 
 {
+
     // data 3x1+2x2+1;
-    const int nrolls=100;  // number of experiments
+    const int nrolls=10000;  // number of experiments
 
     std::default_random_engine generator;
     std::normal_distribution<double> distribution(1.0,0.1);
 
     std::vector<std::vector<double>> X;
-    std::vector<double> Y;
+    std::vector<int> Y;
 
     for (int i=0; i<nrolls; ++i) {
-        for (int j=0; j < nrolls; ++j) 
-        {
-            double number = distribution(generator);
-            std::vector<double> x;
-            x.push_back(i);
-            x.push_back(j);
-            X.push_back(x);
-            double y = 3 * i + 2 * j + number;
-            Y.push_back(y);
-        }
+        double a = distribution(generator);
+        double b = distribution(generator);
+        double c = distribution(generator);
+        int y = 6 * c > (3 * a + 2 * b );
+
+        std::vector<double> x;
+        x.push_back(a);
+        x.push_back(b);
+        x.push_back(c);
+        X.push_back(x);
+        Y.push_back(y);
     }
+    // training and testing 
+    std::vector<int> Y_train = std::vector<int>(Y.begin(), Y.begin() + 7000);
+    std::vector<int> Y_test = std::vector<int>(Y.begin()+7000, Y.end());
 
     // neural network setup
-    std::vector<double> weight; 
-    double bias = 1.0;
-    for (int i = 0; i < 2; i++)
-    {
-        weight.push_back(0.0);
-    }
-
-    Classifier classifer(weight, bias);
+    Classifier classifer;
     classifer.set_debug(true);
-    classifer.Train(X, Y, 100, 0.1);
+    classifer.Train(X, Y_train, 10000, 0.1);
+
+    // accuracy
+    double accu = classifer.Test(X, Y_test);
+    std::cout <<"Accuracy: " << accu << std::endl;
 
     std::cout<<"Weight: ";
     for(const auto& it : classifer.Weight())

@@ -11,12 +11,23 @@ namespace learn{
 
 class Classifier {
 public:
-    Classifier(std::vector<double> weight, double bias) :
-        w_(weight), b_(bias) {}
+    Classifier() = default;
+
+    bool Init(const std::vector<std::vector<double>>& X)
+    {
+        if (X.size() > 0 && X[0].size() > 0)
+        {
+            int size = X[0].size();
+            w_.assign(size, 0);
+            b_ = 0;
+            return true;
+        }
+        return false;
+    }
+    void Clear() { w_.clear(); b_=0; }
 
     std::vector<double> Weight() { return w_; }
     double Bias() { return b_; }
-
     void set_weight(std::vector<double> weight) { w_ = weight; }
     void set_bias(double bias) { b_ = bias; }
     void set_debug(bool debug) { debug_ = debug; }
@@ -42,8 +53,19 @@ public:
         return y_pred;
     }
 
+    const std::vector<int> Predict (const std::vector<std::vector<double>>& X) const
+    {
+        std::vector<int> y_pred;
+        for (const auto& x : X)
+        {
+            double pred = Sigmoid(Matmul(x));
+            y_pred.push_back(pred > 0.5);
+        }
+        return y_pred;
+    }
+
     const double BCELoss (const std::vector<std::vector<double>>& X, 
-        const std::vector<double>& y) const
+        const std::vector<int>& y) const
     {
         std::vector<double> y_pred = Linear(X);
         double loss = 0;
@@ -72,7 +94,7 @@ public:
     }
 
     const std::vector<double> Gradient(const std::vector<std::vector<double>>& X, 
-        const std::vector<double>& y) const
+        const std::vector<int>& y) const
     {
         std::vector<double> grad;
         std::vector<double> y_pred = Linear(X);
@@ -93,8 +115,10 @@ public:
     }
 
     void Train(const std::vector<std::vector<double>>& X, 
-        const std::vector<double>& y, int steps, double lr) 
+        const std::vector<int>& y, int steps, double lr) 
     {
+        if (!Init(X)) return;
+
         for(int i=0; i < steps; i++)
         {
             if (debug_)
@@ -111,9 +135,22 @@ public:
         }
     }
 
+    double Test(const std::vector<std::vector<double>>& X, 
+        const std::vector<int>& y)
+    {
+        std::vector<int> y_pred = Predict(X);
+        double accuracy = 0;
+        int size = y.size();
+        for(int i = 0; i < size; i++)
+        {
+            accuracy += (y_pred[i] == y[i]);
+        }
+        return accuracy * 100.0 / size;
+    }
+
 protected:
     std::vector<double> w_;
-    double b_;
+    double b_ = 0.0;
     bool debug_ = false;
 };
 
