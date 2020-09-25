@@ -121,6 +121,11 @@ BOOST_AUTO_TEST_CASE( search_engine_test )
         std::cout << it.Sequence() << std::endl;
         std::cout << it.Glycan() << std::endl;
         std::cout << it.RawScore() << std::endl;
+        int i = 0;
+        for(auto item : it.Score())
+        {
+            std::cout << i++ << " " << item << std::endl;
+        }
     }
 
     // compute score

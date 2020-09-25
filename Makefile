@@ -22,6 +22,10 @@ search_fdr_prob:
 	apps/search/searching_fdr_prob.cpp model/glycan/nglycan_complex.cpp $(LIB)
 
 #  test
+neural_network_test:
+	$(CC) $(CPPFLAGS) -o test/neural_network_test \
+	engine/learn/neural_network_test.cpp $(INCLUDES)
+
 multi_comparison_test:
 	$(CC) $(CPPFLAGS) -o test/multi_comparison_test \
 	engine/analysis/multi_comparison_test.cpp $(INCLUDES)
