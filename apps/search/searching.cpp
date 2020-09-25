@@ -244,11 +244,11 @@ SearchParameter GetParameter(const struct arguments& arguments)
             break;
         }
     }
-    parameter.weight.set_weight(engine::search::SearchType::Core, arguments.core_w);
-    parameter.weight.set_weight(engine::search::SearchType::Branch, arguments.branch_w);
-    parameter.weight.set_weight(engine::search::SearchType::Terminal, arguments.terminal_w);
-    parameter.weight.set_weight(engine::search::SearchType::Peptide, arguments.peptide_w);
-    parameter.weight.set_weight(engine::search::SearchType::Oxonium, arguments.oxonium_w);
+    // parameter.weight.set_weight(engine::search::SearchType::Core, arguments.core_w);
+    // parameter.weight.set_weight(engine::search::SearchType::Branch, arguments.branch_w);
+    // parameter.weight.set_weight(engine::search::SearchType::Terminal, arguments.terminal_w);
+    // parameter.weight.set_weight(engine::search::SearchType::Peptide, arguments.peptide_w);
+    // parameter.weight.set_weight(engine::search::SearchType::Oxonium, arguments.oxonium_w);
     return parameter;
 }
 

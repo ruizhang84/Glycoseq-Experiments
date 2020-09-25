@@ -3,7 +3,7 @@
 namespace util {
 namespace calc {
 
-double Calc::DotProduct(
+const double Calc::DotProduct(
     const std::vector<double>& vect1, 
     const std::vector<double>& vect2) const
 {

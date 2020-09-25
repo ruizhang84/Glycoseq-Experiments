@@ -6,6 +6,7 @@
 #include <map>
 #include <unordered_map>
 #include <cmath> 
+#include <numeric>
 #include "../../model/spectrum/spectrum.h"
 #include "../../util/mass/glycan.h"
 #include "../../util/mass/peptide.h"
@@ -18,48 +19,34 @@ namespace search{
 enum class SearchType { Core, Branch, Terminal, Oxonium, Peptide, Base };
 enum class ScoreType { Precursor, Elution };
 
-class SearchWeight
-{
-public:
-    SearchWeight() = default;
-    const double Weight(SearchType type) const
-    {
-        auto it = weight_map_.find(type);
-        if ( it != weight_map_.end()){
-            return it->second;
-        }
-        return 0;
-    }
-
-    void set_weight(SearchType type, double weight)
-    {
-        weight_map_[type] = weight;
-    }
-
-protected:
-    std::unordered_map<SearchType, double> weight_map_;
-};
-
 class SearchResult
 {
 public:
-    int Scan() const { return scan_; }
-    int ModifySite() const { return pos_; }
-    std::string Sequence() const { return peptide_; }
-    std::string Glycan() const { return glycan_; }
-    double Score() const { return score_; }
-    double ExtraScore(ScoreType type) const 
+    SearchResult(): score_(5, 0.0){}; // Core, Branch, Terminal, Oxonium, Peptide
+
+    const int Scan() const { return scan_; }
+    const int ModifySite() const { return pos_; }
+    const std::string Sequence() const { return peptide_; }
+    const std::string Glycan() const { return glycan_; }
+    const double RawScore() const 
+    { 
+        return std::accumulate(score_.begin(), score_.end(), 0.0);
+    }
+    const std::vector<double> Score() const { return score_; }
+
+    const double ExtraScore(ScoreType type) const 
     {
         const auto& it = extra_.find(type);
         if (it == extra_.end())
             return 0;
         return it->second;
     }
+
     void set_scan(int scan) { scan_ = scan; }
     void set_site(int pos) { pos_ = pos; }
     void set_peptide(std::string seq) { peptide_ = seq; }
     void set_glycan(std::string glycan) { glycan_ = glycan; }
-    void set_score(double score) { score_ = score; }
+    void set_score(std::vector<double> score) { score_ = score; }
     void set_extra(double score, ScoreType type) { extra_[type] = score; }
 
     static double PeakValue(const std::vector<model::spectrum::Peak>& peaks, bool simple=true)
@@ -97,7 +84,7 @@ protected:
     std::string peptide_;
     std::string glycan_;
     int pos_;
-    double score_;
+    std::vector<double> score_;
     std::map<ScoreType, double> extra_;
     
 };
@@ -105,7 +92,7 @@ protected:
 
 class ResultCollector{
 public:
-    ResultCollector(SearchWeight weight): weight_(weight), best_(0.0), oxonium_(0){}
+    ResultCollector(): best_(0.0), oxonium_(0){}
 
     void set_score_compute(bool simple){
         simple_ = simple;
@@ -117,7 +104,7 @@ public:
         if ((int) results_.size() > max_hits)
         {
             std::sort(results_.begin(), results_.end(), 
-                [](const SearchResult& r1, const SearchResult& r2) -> bool { return r1.Score() > r1.Score(); });
+                [](const SearchResult& r1, const SearchResult& r2) -> bool { return r1.RawScore() > r1.RawScore(); });
             results_.erase(results_.begin() + max_hits, results_.end());
         }
 
@@ -130,7 +117,7 @@ public:
         double max_score = 0;
         for (const auto& it : results_)
         {
-            double score = it.Score();
+            double score = it.RawScore();
             if (score >= max_score){
                 if (score > max_score){
                     best_rest.clear();
@@ -167,9 +154,9 @@ public:
         for(const auto& pos_it : peptide_)
         {
             // compute score
-            double score = ComputeScore(pos_it.second);
+            std::vector<double> score_vec = ComputeScore(pos_it.second);
             // emplace results
-            Emplace(scan, sequence, composite, pos_it.first, score);
+            Emplace(scan, sequence, composite, pos_it.first, score_vec);
         }
     }
 
@@ -178,14 +165,15 @@ public:
         for(const auto& pos_it : peptide_)
         {
             // compute score
-            double score = ComputeScore(pos_it.second);
+            std::vector<double> score_vec = ComputeScore(pos_it.second);
+            double score = std::accumulate(score_vec.begin(), score_vec.end(), 0.0);
             if (score >= best_)
             {
                 if (score > best_)
                     results_.clear();
                 best_ = score;
                 // emplace results
-                Emplace(scan, sequence, composite, pos_it.first, score);
+                Emplace(scan, sequence, composite, pos_it.first, score_vec);
             }
         }
     }
@@ -205,13 +193,13 @@ public:
     void OxoniumCollect(const std::vector<model::spectrum::Peak>& oxonium_peaks)
     {
         if (oxonium_peaks.empty()) return;
-        oxonium_ = weight_.Weight(SearchType::Oxonium) * SearchResult::PeakValue(oxonium_peaks, simple_);
+        oxonium_ = SearchResult::PeakValue(oxonium_peaks, simple_);
     }
     void PeptideCollect(const std::vector<model::spectrum::Peak>& peptide_peaks, int pos)
     {
         if (!peptide_peaks.empty())
         {  
-            peptide_[pos] = weight_.Weight(SearchType::Core) * SearchResult::PeakValue(peptide_peaks, simple_);
+            peptide_[pos] = SearchResult::PeakValue(peptide_peaks, simple_);
         }
     }
     void GlycanCollect(const std::vector<model::spectrum::Peak>& glycan_peaks, 
@@ -222,12 +210,12 @@ public:
             switch (type)
             {
                 case SearchType::Core:
-                    glycan_core_[isomer] = weight_.Weight(SearchType::Core) * SearchResult::PeakValue(glycan_peaks, simple_);
+                    glycan_core_[isomer] = SearchResult::PeakValue(glycan_peaks, simple_);
                     break;
                 case SearchType::Branch:
-                    glycan_branch_[isomer] =  weight_.Weight(SearchType::Branch) * SearchResult::PeakValue(glycan_peaks, simple_);
+                    glycan_branch_[isomer] = SearchResult::PeakValue(glycan_peaks, simple_);
                 case SearchType::Terminal:
-                    glycan_terminal_[isomer] = weight_.Weight(SearchType::Terminal) * SearchResult::PeakValue(glycan_peaks, simple_);
+                    glycan_terminal_[isomer] = SearchResult::PeakValue(glycan_peaks, simple_);
                 default:
                     break;
             }
@@ -254,34 +242,53 @@ public:
     bool Empty() { return results_.empty(); }
 
 protected:
-    double ComputeScore(double peptide_score)
+    std::vector<double> ComputeScore(double peptide_score)
     {
         double score = 0;
+        std::vector<double> score_vec(5, 0.0);
         for(const auto& isomer_it : glycan_core_)
         {
             std::string isomer = isomer_it.first;
             double glycan_score = glycan_core_[isomer] + glycan_branch_[isomer] + glycan_terminal_[isomer]; 
-            score = std::max(score, glycan_score);  
+            if (glycan_score > score)
+            {
+                score = glycan_score;
+                score_vec[0] = glycan_core_[isomer];
+                score_vec[1] = glycan_branch_[isomer];
+                score_vec[2] = glycan_terminal_[isomer];                
+            }
         }
-        score += peptide_score + oxonium_;
-        if (!simple_)
-            score = std::sqrt(score) * 1.0 / std::sqrt(spectrum_);
-        return score;
+        score_vec[3] = oxonium_;
+        score_vec[4] = peptide_score; 
+        if (simple_)
+        {
+            for(int i = 0; i < (int) score_vec.size(); i++)
+            {
+                score_vec[i] /= 100.0;
+            }
+        }else
+        {
+            for(int i = 0; i < (int) score_vec.size(); i++)
+            {
+                score_vec[i] = std::sqrt(score_vec[i]) * 1.0 / std::sqrt(spectrum_);
+            }
+        }
+           
+        return score_vec;
     }
 
     void Emplace(int scan, const std::string& sequence, 
-        const std::string composite, int site, double score)
+        const std::string composite, int site, std::vector<double> score_vec)
     {
         SearchResult res;
         res.set_scan(scan);
         res.set_peptide(sequence);
         res.set_glycan(composite);
         res.set_site(site);
-        res.set_score(score);
+        res.set_score(score_vec);
         results_.push_back(res);
     }
 
-    SearchWeight weight_;
     const int max_hits = 20;
     double best_;
     double spectrum_;

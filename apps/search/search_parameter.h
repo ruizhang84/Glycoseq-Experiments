@@ -36,9 +36,6 @@ struct SearchParameter
         engine::protein::Proteases::GluC
     };
     int miss_cleavage = 2;
-    // score weights
-    engine::search::SearchWeight weight;
-
 };
 
 

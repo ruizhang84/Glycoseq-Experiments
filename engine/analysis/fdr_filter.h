@@ -46,7 +46,7 @@ public:
 
 protected:
     static double ComputeScore(const engine::search::SearchResult& result)
-        { return result.Score(); }
+        { return result.RawScore(); }
 
     static bool ScoreLess(const engine::search::SearchResult& r1, const engine::search::SearchResult& r2) 
         { return (ComputeScore(r1) < ComputeScore(r2)); }

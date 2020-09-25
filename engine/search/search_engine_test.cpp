@@ -18,7 +18,7 @@ namespace search {
 BOOST_AUTO_TEST_CASE( search_engine_test ) 
 {
     // read spectrum
-    std::string path = "/home/yu/Documents/GlycoSeq-Cpp/data/ZC_20171218_C22_R1.mgf";
+    std::string path = "/home/ruiz/Documents/Glycoseq-Experiments/data/ZC_20171218_C22_R1.mgf";
     std::unique_ptr<util::io::SpectrumParser> parser = 
         std::make_unique<util::io::MGFParser>(path, util::io::SpectrumType::EThcD);
     util::io::SpectrumReader spectrum_reader(path, std::move(parser));
@@ -33,7 +33,7 @@ BOOST_AUTO_TEST_CASE( search_engine_test )
     BOOST_CHECK(spec.Peaks().front().Intensity() < 1);
 
     // read fasta and build peptides
-    util::io::FASTAReader fasta_reader("/home/yu/Documents/GlycoSeq-Cpp/data/haptoglobin.fasta");
+    util::io::FASTAReader fasta_reader("/home/ruiz/Documents/Glycoseq-Experiments/data/haptoglobin.fasta");
     std::vector<model::protein::Protein> proteins = fasta_reader.Read();
  
     engine::protein::Digestion digest;
@@ -120,7 +120,7 @@ BOOST_AUTO_TEST_CASE( search_engine_test )
     {
         std::cout << it.Sequence() << std::endl;
         std::cout << it.Glycan() << std::endl;
-        std::cout << it.Score() << std::endl;
+        std::cout << it.RawScore() << std::endl;
     }
 
     // compute score
