@@ -11,67 +11,67 @@ class GlycanMass
 public:
     static double Compute(const model::glycan::Glycan& glycan) 
     {
-        double mass = 0;
+        double ms = 0;
         for(const auto &it : glycan.CompositionConst())
         {
             switch (it.first)
             {
             case model::glycan::Monosaccharide::GlcNAc:
-                mass += kHexNAc * it.second;
+                ms += kHexNAc * it.second;
                 break;
             case model::glycan::Monosaccharide::Gal:
-                mass += kHex * it.second;
+                ms += kHex * it.second;
                 break;     
             case model::glycan::Monosaccharide::Man:
-                mass += kHex * it.second;
+                ms += kHex * it.second;
                 break;     
             case model::glycan::Monosaccharide::Fuc:
-                mass += kFuc * it.second;
+                ms += kFuc * it.second;
                 break;     
             case model::glycan::Monosaccharide::NeuAc:
-                mass += kNeuAc * it.second;
+                ms += kNeuAc * it.second;
                 break;           
             case model::glycan::Monosaccharide::NeuGc:
-                mass += kNeuGc * it.second;
+                ms += kNeuGc * it.second;
                 break;    
             default:
                 break;
             }
         }
-        return mass;
+        return ms;
     }
 
     static double Compute
         (const std::map<model::glycan::Monosaccharide, int>& composite) 
     {
-        double mass = 0;
+        double ms = 0;
         for(const auto &it : composite)
         {
             switch (it.first)
             {
             case model::glycan::Monosaccharide::GlcNAc:
-                mass += kHexNAc * it.second;
+                ms += kHexNAc * it.second;
                 break;
             case model::glycan::Monosaccharide::Gal:
-                mass += kHex * it.second;
+                ms += kHex * it.second;
                 break;     
             case model::glycan::Monosaccharide::Man:
-                mass += kHex * it.second;
+                ms += kHex * it.second;
                 break;     
             case model::glycan::Monosaccharide::Fuc:
-                mass += kFuc * it.second;
+                ms += kFuc * it.second;
                 break;     
             case model::glycan::Monosaccharide::NeuAc:
-                mass += kNeuAc * it.second;
+                ms += kNeuAc * it.second;
                 break;           
             case model::glycan::Monosaccharide::NeuGc:
-                mass += kNeuGc * it.second;
+                ms += kNeuGc * it.second;
                 break;    
             default:
                 break;
             }
         }
-        return mass;
+        return ms;
     }
 
     static constexpr double kHexNAc = 203.0794;

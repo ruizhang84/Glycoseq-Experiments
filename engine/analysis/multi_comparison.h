@@ -5,7 +5,7 @@
 #include <numeric>
 #include <map>
 #include <boost/math/distributions/normal.hpp>
-#include  "../search/search_result.h"
+#include "../search/search_result.h"
 
 using boost::math::normal_distribution;
 
@@ -32,7 +32,7 @@ public:
             {
                 v[i] = std::vector<double>();
             }
-            v[i].push_back(it.RawScore());
+            v[i].push_back(it.Value());
         }
 
         // compute p value
@@ -48,9 +48,9 @@ public:
             {
                 std::vector<double>& score_list = v[it.Scan()];
                 double avg = mean(score_list);
-                if (avg > it.RawScore()) continue;
+                if (avg > it.Value()) continue;
 
-                double p = pValue(score_list, it.RawScore());
+                double p = pValue(score_list, it.Value());
 
                 p_v[it.Scan()] = p;
                 s_results[it.Scan()] = it;

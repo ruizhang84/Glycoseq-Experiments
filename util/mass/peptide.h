@@ -12,17 +12,17 @@ class PeptideMass
 public:
     static double Compute(const std::string& seq)
     {
-        double mass = 18.0105;  //water
+        double ms = 18.0105;  //water
         for (char s : seq)
         {
             if (std::toupper(s) == 'C')
             {
                 //Iodoacetamide
-                mass += 57.02146;
+                ms += 57.02146;
             }
-            mass += GetAminoAcidMW(s);
+            ms += GetAminoAcidMW(s);
         }
-        return mass;
+        return ms;
     }
 
 

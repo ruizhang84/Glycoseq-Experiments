@@ -43,12 +43,17 @@ public:
             w_.begin(), b_);
     }
 
+    const double Logit(const std::vector<double>& x) const
+    {
+        return Sigmoid(Matmul(x));
+    }
+
     const std::vector<double> Linear (const std::vector<std::vector<double>>& X) const
     {
         std::vector<double> y_pred;
         for (const auto& x : X)
         {
-            y_pred.push_back(Sigmoid(Matmul(x)));
+            y_pred.push_back(Logit(x));
         }
         return y_pred;
     }
@@ -58,8 +63,7 @@ public:
         std::vector<int> y_pred;
         for (const auto& x : X)
         {
-            double pred = Sigmoid(Matmul(x));
-            y_pred.push_back(pred > 0.5);
+            y_pred.push_back(Logit(x) > 0.5);
         }
         return y_pred;
     }

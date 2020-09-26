@@ -3,7 +3,6 @@
 
 #include <string>
 #include <cmath>
-#include "peptide.h"
 
 namespace util {
 namespace mass {
@@ -15,9 +14,9 @@ public:
     {
         return (mz - kIon) * charge;
     }
-    static double ComputeMZ(const double mass, const int charge)
+    static double ComputeMZ(const double ms, const int charge)
     {
-        return (mass + kIon * charge) / charge;
+        return (ms + kIon * charge) / charge;
     }
     static double ComputePPM(const double expected, const double observed)
     {

@@ -17,8 +17,12 @@ public:
         UpdateElutionScore(results);
         for(auto& it : results)
         {
-            double score = it.Score() *
-                it.ExtraScore(engine::search::ScoreType::Elution);
+            std::vector<double> score;
+            for(const auto& s: it.Score())
+            {
+                score.push_back(s * 
+                    it.ExtraScore(engine::search::ScoreType::Elution));
+            }
             it.set_score(score);
         }
     }

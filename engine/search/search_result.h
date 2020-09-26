@@ -4,7 +4,6 @@
 
 #include <vector>
 #include <map>
-#include <unordered_map>
 #include <cmath> 
 #include <numeric>
 #include "../../model/spectrum/spectrum.h"
@@ -22,7 +21,7 @@ enum class ScoreType { Precursor, Elution };
 class SearchResult
 {
 public:
-    SearchResult(): score_(5, 0.0){}; // Core, Branch, Terminal, Oxonium, Peptide
+    SearchResult() = default;
 
     const int Scan() const { return scan_; }
     const int ModifySite() const { return pos_; }
@@ -30,8 +29,10 @@ public:
     const std::string Glycan() const { return glycan_; }
     const double RawScore() const 
     { 
+        if (score_.size() == 0) return 0.0;
         return std::accumulate(score_.begin(), score_.end(), 0.0);
     }
+    const double Value() const { return value_; }
     const std::vector<double> Score() const { return score_; }
 
     const double ExtraScore(ScoreType type) const 
@@ -47,6 +48,7 @@ public:
     void set_peptide(std::string seq) { peptide_ = seq; }
     void set_glycan(std::string glycan) { glycan_ = glycan; }
     void set_score(std::vector<double> score) { score_ = score; }
+    void set_value(double value) { value_ = value; }
     void set_extra(double score, ScoreType type) { extra_[type] = score; }
 
     static double PeakValue(const std::vector<model::spectrum::Peak>& peaks, bool simple=true)
@@ -85,6 +87,7 @@ protected:
     std::string glycan_;
     int pos_;
     std::vector<double> score_;
+    double value_;
     std::map<ScoreType, double> extra_;
     
 };
@@ -92,7 +95,7 @@ protected:
 
 class ResultCollector{
 public:
-    ResultCollector(): best_(0.0), oxonium_(0){}
+    ResultCollector() = default;
 
     void set_score_compute(bool simple){
         simple_ = simple;
@@ -278,7 +281,7 @@ protected:
     }
 
     void Emplace(int scan, const std::string& sequence, 
-        const std::string composite, int site, std::vector<double> score_vec)
+        const std::string& composite, int site, const std::vector<double>& score_vec)
     {
         SearchResult res;
         res.set_scan(scan);
@@ -290,12 +293,12 @@ protected:
     }
 
     const int max_hits = 20;
-    double best_;
-    double spectrum_;
-    double oxonium_;
-    bool simple_;
-    std::unordered_map<int, double> peptide_;
-    std::unordered_map<std::string, double> glycan_core_, glycan_branch_, glycan_terminal_;
+    double best_ = 0.0;
+    double spectrum_ = 0.0;
+    double oxonium_ = 0.0;
+    bool simple_ = false;
+    std::map<int, double> peptide_;
+    std::map<std::string, double> glycan_core_, glycan_branch_, glycan_terminal_;
     double precursor_mass_; 
     int isotopic_;
     std::vector<SearchResult> results_;

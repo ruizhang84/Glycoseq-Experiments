@@ -70,7 +70,7 @@ void ReportResults(const std::string& out_path,
         outfile << it.Scan() << ",";
         outfile << it.Sequence() << ",";
         outfile << it.Glycan() << ",";
-        outfile << it.Score() << "\n";
+        outfile << it.RawScore() << "\n";
     }
     outfile.close();
 }

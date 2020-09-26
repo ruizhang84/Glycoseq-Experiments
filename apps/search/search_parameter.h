@@ -36,6 +36,9 @@ struct SearchParameter
         engine::protein::Proteases::GluC
     };
     int miss_cleavage = 2;
+    // weights
+    std::vector<double> weights;
+    double bias = 0;
 };
 
 
