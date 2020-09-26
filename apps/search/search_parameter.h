@@ -6,7 +6,6 @@
 
 #include "../../algorithm/search/search.h"
 #include "../../engine/protein/protein_digest.h"
-#include "../../engine/search/search_result.h"
 
 struct SearchParameter
 {

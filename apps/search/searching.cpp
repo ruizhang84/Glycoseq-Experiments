@@ -40,7 +40,7 @@ static struct argp_option options[] = {
     {"output",    'o',    "result.csv",   0,  "csv, Results Output Path" },
     {"pthread",   'p',  "6",  0,  "Number of Searching Threads" },
     {"digestion",   'd',  "TG",  0,  "The Digestion, Trypsin (T), Pepsin (P), Chymotrypsin (C), GluC (G)" }, 
-    {"miss_cleavage",   'c',  "2",  0,  "The Missing Cleavage Upto" },    
+    {"miss_cleavage",   's',  "2",  0,  "The Missing Cleavage Upto" },    
     {"HexNAc",   'x',  "12",  0,  "Search Up to Number of HexNAc" },
     {"HexNA",   'y',  "12",  0,  "Search Up to Number of Hex" },
     {"Fuc",   'z',  "5",  0,  "Search Up to Number of Fuc" },
@@ -51,6 +51,12 @@ static struct argp_option options[] = {
     {"ms1_by",   'k',  "0",  0, "MS Tolereance By Int: PPM (0) or Dalton (1)" },
     {"ms2_by",   'l',  "1",  0, "MS2 Tolereance By Int: PPM (0) or Dalton (1)" },
     {"fdr_rate",   'r',  "0.01",  0, "FDR rate" },
+    {"core_weight",   'a',  "1.0",  0, "Score Weight, Glycan's PentaCore Term" },
+    {"branch_weight",   'A',  "1.0",  0, "Score Weight, Glycan's Branch Term" },
+    {"terminal_weight",   'b',  "1.0",  0, "Score Weight, Glycan's Terminal Term" },
+    {"oxonium_weight",   'B',  "1.0",  0, "Score Weight, Oxonium Term" },
+    {"peptide_weight",   'c',  "1.0",  0, "Score Weight, Peptide Sequence Term" },
+    {"score_base",   'C',  "0.0",  0, "The base value for computing score" },
     { 0 }
 };
 
@@ -106,10 +112,6 @@ parse_opt (int key, char *arg, struct argp_state *state)
 
     switch (key)
     {
-    case 'c':
-        arguments->miss_cleavage = atoi(arg);
-        break;
-    
     case 'd':
         arguments->digestion = arg;
         break;
@@ -155,6 +157,10 @@ parse_opt (int key, char *arg, struct argp_state *state)
         arguments->fdr_rate = atof(arg);
         break;
 
+    case 's':
+        arguments->miss_cleavage = atoi(arg);
+        break;
+
     case 'u':
         arguments->neuAc_upper_bound = atoi(arg);
         break;
@@ -175,27 +181,27 @@ parse_opt (int key, char *arg, struct argp_state *state)
         arguments->fuc_upper_bound = atoi(arg);
         break;
 
-    case 'C':
+    case 'a':
         arguments->core_w = atof(arg);
         break;
 
-    case 'B':
+    case 'A':
         arguments->branch_w = atof(arg);
         break;
 
-    case 'T':
+    case 'b':
         arguments->terminal_w = atof(arg);
         break;
         
-    case 'P':
+    case 'B':
         arguments->peptide_w = atof(arg);
         break;
 
-    case 'O':
+    case 'c':
         arguments->oxonium_w = atof(arg);
         break;
 
-    case 'S':
+    case 'C':
         arguments->bias = atof(arg);
         break;
 

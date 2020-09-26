@@ -22,6 +22,7 @@
 #include "../../engine/search/spectrum_search.h"
 #include "../../engine/search/search_result.h"
 #include "../../engine/analysis/fdr_prob_filter.h"
+#include "../../engine/learn/neural_network.h"
 
 
 const char *argp_program_version =
@@ -39,7 +40,7 @@ static struct argp_option options[] = {
     {"output",    'o',    "result.csv",   0,  "csv, Results Output Path" },
     {"pthread",   'p',  "6",  0,  "Number of Searching Threads" },
     {"digestion",   'd',  "TG",  0,  "The Digestion, Trypsin (T), Pepsin (P), Chymotrypsin (C), GluC (G)" }, 
-    {"miss_cleavage",   'c',  "2",  0,  "The Missing Cleavage Upto" },    
+    {"miss_cleavage",   's',  "2",  0,  "The Missing Cleavage Upto" },    
     {"HexNAc",   'x',  "12",  0,  "Search Up to Number of HexNAc" },
     {"HexNA",   'y',  "12",  0,  "Search Up to Number of Hex" },
     {"Fuc",   'z',  "5",  0,  "Search Up to Number of Fuc" },
@@ -50,6 +51,12 @@ static struct argp_option options[] = {
     {"ms1_by",   'k',  "0",  0, "MS Tolereance By Int: PPM (0) or Dalton (1)" },
     {"ms2_by",   'l',  "1",  0, "MS2 Tolereance By Int: PPM (0) or Dalton (1)" },
     {"fdr_rate",   'r',  "0.01",  0, "FDR rate" },
+    {"core_weight",   'a',  "1.0",  0, "Score Weight, Glycan's PentaCore Term" },
+    {"branch_weight",   'A',  "1.0",  0, "Score Weight, Glycan's Branch Term" },
+    {"terminal_weight",   'b',  "1.0",  0, "Score Weight, Glycan's Terminal Term" },
+    {"oxonium_weight",   'B',  "1.0",  0, "Score Weight, Oxonium Term" },
+    {"peptide_weight",   'c',  "1.0",  0, "Score Weight, Peptide Sequence Term" },
+    {"score_base",   'C',  "0.0",  0, "The base value for computing score" },
     { 0 }
 };
 
@@ -87,6 +94,13 @@ struct arguments
     int ms2_by = 1;
     // fdr
     double fdr_rate = 0.01;
+    // weights
+    double core_w = 1.0;
+    double branch_w = 1.0;
+    double terminal_w = 1.0;
+    double peptide_w = 1.0;
+    double oxonium_w = 1.0;
+    double bias = 0.0;
 };
 
 
@@ -98,10 +112,6 @@ parse_opt (int key, char *arg, struct argp_state *state)
 
     switch (key)
     {
-    case 'c':
-        arguments->miss_cleavage = atoi(arg);
-        break;
-    
     case 'd':
         arguments->digestion = arg;
         break;
@@ -147,6 +157,10 @@ parse_opt (int key, char *arg, struct argp_state *state)
         arguments->fdr_rate = atof(arg);
         break;
 
+    case 's':
+        arguments->miss_cleavage = atoi(arg);
+        break;
+
     case 'u':
         arguments->neuAc_upper_bound = atoi(arg);
         break;
@@ -165,6 +179,30 @@ parse_opt (int key, char *arg, struct argp_state *state)
 
     case 'z':
         arguments->fuc_upper_bound = atoi(arg);
+        break;
+
+    case 'a':
+        arguments->core_w = atof(arg);
+        break;
+
+    case 'A':
+        arguments->branch_w = atof(arg);
+        break;
+
+    case 'b':
+        arguments->terminal_w = atof(arg);
+        break;
+        
+    case 'B':
+        arguments->peptide_w = atof(arg);
+        break;
+
+    case 'c':
+        arguments->oxonium_w = atof(arg);
+        break;
+
+    case 'C':
+        arguments->bias = atof(arg);
         break;
 
     default:
@@ -218,6 +256,13 @@ SearchParameter GetParameter(const struct arguments& arguments)
             break;
         }
     }
+    parameter.weights.assign(5, 0.0);
+    parameter.weights[0] = arguments.core_w;
+    parameter.weights[1] = arguments.branch_w;
+    parameter.weights[2] = arguments.terminal_w;
+    parameter.weights[3] = arguments.oxonium_w;
+    parameter.weights[4] = arguments.peptide_w;
+    parameter.bias = arguments.bias;
     return parameter;
 }
 
@@ -284,6 +329,19 @@ int main(int argc, char *argv[])
     scorer_second.join();
 
     std::cout << "Total target:" << targets.size() <<" decoy:" << decoys.size() << std::endl;
+
+    // neural network
+    engine::learn::Classifier classifier;
+    classifier.set_weight(parameter.weights);
+    classifier.set_bias(parameter.bias);
+    for (auto& it : targets)
+    {
+        it.set_value(classifier.Logit(it.Score()));
+    }
+    for (auto& it : decoys)
+    {
+        it.set_value(classifier.Logit(it.Score()));
+    }
 
     // compute p value
     engine::analysis::FDRProbFilter filter(parameter.fdr_rate);

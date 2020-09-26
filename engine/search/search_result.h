@@ -30,10 +30,14 @@ public:
     const double RawScore() const 
     { 
         if (score_.size() == 0) return 0.0;
-        return std::accumulate(score_.begin(), score_.end(), 0.0);
+        if (simple_)
+            return std::accumulate(score_.begin(), score_.end(), 0.0);
+        return std::sqrt(std::accumulate(score_.begin(), score_.end(), 0.0));
     }
     const double Value() const { return value_; }
     const std::vector<double> Score() const { return score_; }
+
+    void set_simple(bool simple) { simple_ = simple; }
 
     const double ExtraScore(ScoreType type) const 
     {
@@ -82,6 +86,7 @@ public:
     static constexpr double kPPM = 50.0;
 
 protected:
+    bool simple_ = false;
     int scan_;
     std::string peptide_;
     std::string glycan_;
@@ -273,7 +278,7 @@ protected:
         {
             for(int i = 0; i < (int) score_vec.size(); i++)
             {
-                score_vec[i] = std::sqrt(score_vec[i]) * 1.0 / std::sqrt(spectrum_);
+                score_vec[i] = score_vec[i] * 1.0 / spectrum_;
             }
         }
            
