@@ -13,6 +13,10 @@ search:
 	$(CC) $(CPPFLAGS) -o searching \
 	apps/search/searching.cpp model/glycan/nglycan_complex.cpp $(LIB)
 
+search_train:
+	$(CC) $(CPPFLAGS) -o searching_train \
+	apps/search/searching_train.cpp model/glycan/nglycan_complex.cpp $(LIB)
+
 search_simple:
 	$(CC) $(CPPFLAGS) -o searching_simple \
 	apps/search/searching_simple.cpp model/glycan/nglycan_complex.cpp $(LIB)

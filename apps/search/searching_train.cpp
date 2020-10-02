@@ -5,6 +5,7 @@
 #include <mutex> 
 #include <chrono> 
 #include <map>
+#include <unordered_set>
 
 #include <argp.h>
 
@@ -14,6 +15,7 @@
 
 #include "../../util/io/mgf_parser.h"
 #include "../../util/io/fasta_reader.h"
+#include "../../util/io/train_reader.h"
 #include "../../engine/protein/protein_digest.h"
 #include "../../engine/protein/protein_ptm.h"
 #include "../../engine/glycan/glycan_builder.h"
@@ -34,10 +36,9 @@ static char doc[] =
   "Glycoseq -- a program to search glycopeptide from high thoughput LS-MS/MS";
 
 static struct argp_option options[] = {
-    {"spath", 'i',    "spectrum.mgf",  0,  "mgf, Spectrum MS/MS Input Path" },
+    {"tpath", 't',    "sidentified_scans.csv",  0,  "trianing dataset, file name with identified scan numbers" },
     {"fpath", 'f',    "protein.fasta",  0,  "fasta, Protein Sequence Input Path" },
-    {"gpath", 'g',    "reversed",  0,  "fasta, Protein Sequence for Decoy" },
-    {"output",    'o',    "result.csv",   0,  "csv, Results Output Path" },
+    {"output",    'o',    "weight.txt",   0,  "optimized score weight" },
     {"pthread",   'p',  "6",  0,  "Number of Searching Threads" },
     {"digestion",   'd',  "TG",  0,  "The Digestion, Trypsin (T), Pepsin (P), Chymotrypsin (C), GluC (G)" }, 
     {"miss_cleavage",   's',  "2",  0,  "The Missing Cleavage Upto" },    
@@ -50,33 +51,21 @@ static struct argp_option options[] = {
     {"ms2_tol",   'n',  "0.01",  0,  "MS2 Tolereance" },
     {"ms1_by",   'k',  "0",  0, "MS Tolereance By Int: PPM (0) or Dalton (1)" },
     {"ms2_by",   'l',  "1",  0, "MS2 Tolereance By Int: PPM (0) or Dalton (1)" },
-    {"fdr_rate",   'r',  "0.01",  0, "FDR rate" },
-    {"core_weight",   'a',  "1.0",  0, "Score Weight, Glycan's PentaCore Term" },
-    {"branch_weight",   'A',  "1.0",  0, "Score Weight, Glycan's Branch Term" },
-    {"terminal_weight",   'b',  "1.0",  0, "Score Weight, Glycan's Terminal Term" },
-    {"oxonium_weight",   'B',  "1.0",  0, "Score Weight, Oxonium Term" },
-    {"peptide_weight",   'c',  "1.0",  0, "Score Weight, Peptide Sequence Term" },
-    {"score_base",   'C',  "0.0",  0, "The base value for computing score" },
     { 0 }
 };
 
-static std::string default_spectra_path = 
-        "/home/yu/Documents/GlycoSeq-Cpp/data/ZC_20171218_C16_R1.mgf";
+static std::string default_train_path = 
+        "/home/ruiz/Documents/Glycoseq-Experiments/data/identified_scan.csv";
 static std::string default_fasta_path = 
-        "/home/yu/Documents/GlycoSeq-Cpp/data/haptoglobin.fasta";
-static std::string default_decoy_path = 
-        "/home/yu/Documents/GlycoSeq-Cpp/data/titin.fasta";
-static std::string default_out_path = "result.csv";
+        "/home/ruiz/Documents/Glycoseq-Experiments/data/haptoglobin.fasta";
+static std::string default_out_path = "weight.txt";
 static std::string default_digestion = "TG";
 
 struct arguments
 {
-    char * spectra_path = const_cast<char*> (default_spectra_path.c_str());
+    char * train_path = const_cast<char*> (default_train_path.c_str());
     char * fasta_path = const_cast<char*> (default_fasta_path.c_str());
     char * out_path = const_cast<char*> (default_out_path.c_str());
-    // decoy
-    bool decoy_set = false;
-    char * decoy_path = const_cast<char*> (default_decoy_path.c_str());
     //digestion
     int miss_cleavage = 2;
     char * digestion = const_cast<char*> (default_digestion.c_str());
@@ -92,15 +81,6 @@ struct arguments
     double ms2_tol = 0.01;
     int ms1_by = 0;
     int ms2_by = 1;
-    // fdr
-    double fdr_rate = 0.01;
-    // weights
-    double core_w = 1.0;
-    double branch_w = 1.0;
-    double terminal_w = 1.0;
-    double peptide_w = 1.0;
-    double oxonium_w = 1.0;
-    double bias = 0.0;
 };
 
 
@@ -120,13 +100,8 @@ parse_opt (int key, char *arg, struct argp_state *state)
         arguments->fasta_path = arg;
         break;
 
-    case 'g':
-        arguments->decoy_set = true;
-        arguments->decoy_path = arg;
-        break;
-
     case 'i':
-        arguments->spectra_path = arg;
+        arguments->train_path = arg;
         break;
 
     case 'k':
@@ -153,9 +128,6 @@ parse_opt (int key, char *arg, struct argp_state *state)
         arguments->n_thread = atoi(arg);
         break;
     
-    case 'r':
-        arguments->fdr_rate = atof(arg);
-        break;
 
     case 's':
         arguments->miss_cleavage = atoi(arg);
@@ -179,30 +151,6 @@ parse_opt (int key, char *arg, struct argp_state *state)
 
     case 'z':
         arguments->fuc_upper_bound = atoi(arg);
-        break;
-
-    case 'a':
-        arguments->core_w = atof(arg);
-        break;
-
-    case 'A':
-        arguments->branch_w = atof(arg);
-        break;
-
-    case 'b':
-        arguments->terminal_w = atof(arg);
-        break;
-        
-    case 'B':
-        arguments->peptide_w = atof(arg);
-        break;
-
-    case 'c':
-        arguments->oxonium_w = atof(arg);
-        break;
-
-    case 'C':
-        arguments->bias = atof(arg);
         break;
 
     default:
@@ -231,7 +179,6 @@ SearchParameter GetParameter(const struct arguments& arguments)
     parameter.ms2_by = arguments.ms2_by == 0 ?
         algorithm::search::ToleranceBy::PPM :
         algorithm::search::ToleranceBy::Dalton;
-    parameter.fdr_rate = arguments.fdr_rate;
     std::string protease(arguments.digestion);
     for(const char& c : protease)
     {
@@ -256,14 +203,28 @@ SearchParameter GetParameter(const struct arguments& arguments)
             break;
         }
     }
-    parameter.weights.assign(5, 0.0);
-    parameter.weights[0] = arguments.core_w;
-    parameter.weights[1] = arguments.branch_w;
-    parameter.weights[2] = arguments.terminal_w;
-    parameter.weights[3] = arguments.oxonium_w;
-    parameter.weights[4] = arguments.peptide_w;
-    parameter.bias = arguments.bias;
+    parameter.weights.assign(5, 1.0);
+    parameter.bias = 1.0;
     return parameter;
+}
+
+void collect_data(const std::vector<engine::search::SearchResult>& targets, 
+                  const std::unordered_set<int>& scan_set,
+                  std::vector<std::vector<double>>& X, std::vector<int>& y)
+{
+    for(const auto& it : targets)
+    {
+        std::vector<double> scores = it.Score();
+        X.push_back(scores);
+        if (scan_set.find(it.Scan()) != scan_set.end())
+        {
+            y.push_back(1);
+        }
+        else
+        {
+            y.push_back(0);
+        }
+    }
 }
 
 int main(int argc, char *argv[])
@@ -271,38 +232,26 @@ int main(int argc, char *argv[])
     // parse arguments
     struct arguments arguments;
     argp_parse (&argp, argc, argv, 0, 0, &arguments);
-    std::string spectra_path(arguments.spectra_path) ;
+    std::string train_path(arguments.train_path);
     std::string fasta_path(arguments.fasta_path);
-    std::string decoy_path(arguments.decoy_path); 
     std::string out_path(arguments.out_path);
     SearchParameter parameter = GetParameter(arguments);
 
-    // read spectrum
-    std::unique_ptr<util::io::SpectrumParser> parser = 
-        std::make_unique<util::io::MGFParser>(spectra_path, util::io::SpectrumType::EThcD);
-    std::unique_ptr<util::io::SpectrumReader> spectrum_reader
-        = std::make_unique<util::io::SpectrumReader>(spectra_path, std::move(parser));
-    spectrum_reader->Init();
+    // Get train Dataset
+    util::io::TrainReader train_reader(train_path);
+    train_reader.Init();
+    std::map<std::string, std::vector<int>> dataset = train_reader.Dataset();
+
+    // neural network
+    engine::learn::Classifier classifier;
+    classifier.set_weight(parameter.weights);
+    classifier.set_bias(parameter.bias);
 
     // read fasta and build peptides
     std::vector<std::string> peptides, decoy_peptides;
     std::unordered_set<std::string> seqs = PeptidesDigestion(fasta_path, parameter);
     peptides.insert(peptides.end(), seqs.begin(), seqs.end());
-    if (arguments.decoy_set)
-    {
-        std::unordered_set<std::string> decoy_seqs = PeptidesDigestion(decoy_path, parameter);
-        decoy_peptides.insert(decoy_peptides.end(), decoy_seqs.begin(), decoy_seqs.end());
-    }
-    else
-    {
-        for(const auto& s : seqs)
-        {
-            std::string decoy_s(s);
-            std::reverse(decoy_s.begin(), decoy_s.end());
-            decoy_peptides.push_back(decoy_s);
-        }
-    }
-   
+
     // // build glycans
     std::unique_ptr<engine::glycan::NGlycanBuilder> builder =
         std::make_unique<engine::glycan::NGlycanBuilder>(parameter.hexNAc_upper_bound, 
@@ -311,44 +260,67 @@ int main(int argc, char *argv[])
     builder->Build();
 
     // search
-    std::cout << "Start to scan\n"; 
+    std::cout << "Start to train\n"; 
     auto start = std::chrono::high_resolution_clock::now();
 
-    // seraching targets 
-    SearchDispatcher target_searcher(spectrum_reader->GetSpectrum(), builder.get(), peptides, parameter);
-    std::vector<engine::search::SearchResult> targets = target_searcher.Dispatch();
+    // training
+    std::vector<std::vector<double>> X_train, X_test;
+    std::vector<int> y_train, y_test;
 
-    // seraching decoys
-    SearchDispatcher decoy_searcher(spectrum_reader->GetSpectrum(), builder.get(), decoy_peptides, parameter);
-    std::vector<engine::search::SearchResult> decoys = decoy_searcher.DecoyDispatch();
-
-    // set up scorer
-    std::thread scorer_first(ScoringWorker, std::ref(targets));
-    std::thread scorer_second(ScoringWorker, std::ref(decoys));   
-    scorer_first.join();
-    scorer_second.join();
-
-    std::cout << "Total target:" << targets.size() <<" decoy:" << decoys.size() << std::endl;
-
-    // neural network
-    engine::learn::Classifier classifier;
-    classifier.set_weight(parameter.weights);
-    classifier.set_bias(parameter.bias);
-    for (auto& it : targets)
+    int count = 0;
+    int size = dataset.size();
+    for(const auto& data : dataset)
     {
-        it.set_value(classifier.Logit(it.Score()));
+        // read spectrum
+        std::string spectra_path = data.first;
+        std::vector<int> scans = data.second;
+        std::unordered_set<int> scan_set(scans.begin(), scans.end());
+        count++;
+
+        std::unique_ptr<util::io::SpectrumParser> parser = 
+            std::make_unique<util::io::MGFParser>(spectra_path, util::io::SpectrumType::EThcD);
+        std::unique_ptr<util::io::SpectrumReader> spectrum_reader
+            = std::make_unique<util::io::SpectrumReader>(spectra_path, std::move(parser));
+        spectrum_reader->Init();
+
+        // seraching targets 
+        SearchDispatcher target_searcher(spectrum_reader->GetSpectrum(), builder.get(), peptides, parameter);
+        std::vector<engine::search::SearchResult> targets = target_searcher.Dispatch();
+
+        std::cout << "Total target:" << targets.size() << std::endl;
+
+        // collect data;
+        if (count < 0.6 * size)
+        {
+            collect_data(targets, scan_set, X_train, y_train);
+        }
+        else
+        {
+            collect_data(targets, scan_set, X_test, y_test);
+        }
+        
     }
-    for (auto& it : decoys)
+
+    classifier.Train(X_train, y_train, 10, 0.01);
+
+    // testing
+    double accu = classifier.Test(X_test, y_test);
+    std::cout << "Accuracy: " << accu << std::endl;
+
+    // output
+    std::vector<double> weight = classifier.Weight();
+    double bias = classifier.Bias();
+
+    std::ofstream outfile;
+    outfile.open (out_path);
+    outfile<< "weight: ";
+
+    for(auto it : weight)
     {
-        it.set_value(classifier.Logit(it.Score()));
+        outfile<<it<<",";
     }
-
-    // compute p value
-    engine::analysis::MultiComparison tester(parameter.fdr_rate);
-    std::vector<engine::search::SearchResult> results = tester.Tests(targets, decoys);
-
-    // output analysis results
-    ReportResults(out_path, results);
+    outfile<<"bias: "<<bias<<"\n";
+    outfile.close();
 
     auto stop = std::chrono::high_resolution_clock::now(); 
     auto duration = std::chrono::duration_cast<std::chrono::seconds>(stop - start); 
