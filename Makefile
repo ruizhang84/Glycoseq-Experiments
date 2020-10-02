@@ -75,4 +75,4 @@ test: ${TEST_CASES} ${TEST_CASES_2}
 
 # clean up
 clean:
-	rm -f core test/* *.o clustering searching searching_fdr_prob searching_simple
+	rm -f core test/* *.o clustering searching searching_fdr_prob searching_simple searching_train
