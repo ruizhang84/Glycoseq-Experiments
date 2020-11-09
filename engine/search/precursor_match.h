@@ -119,7 +119,7 @@ public:
 
             for (int i = 0; i <= isotope; i++)
             {
-                double q = delta + i * util::mass::SpectrumMass::kIon;
+                double q = delta - i * util::mass::SpectrumMass::kIon;
                 std::vector<std::string> peptides = searcher_.Query(q);
                 for(const auto& peptide : peptides)
                 {
