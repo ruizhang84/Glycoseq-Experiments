@@ -287,6 +287,11 @@ int main(int argc, char *argv[])
         SearchDispatcher target_searcher(spectrum_reader->GetSpectrum(), builder.get(), peptides, parameter);
         std::vector<engine::search::SearchResult> targets = target_searcher.Dispatch();
 
+        // for (auto& it : targets)
+        // {
+        //     it.set_simple(true);
+        // }
+
         std::cout << "Total target:" << targets.size() << std::endl;
 
         // collect data;
